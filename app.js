@@ -44,7 +44,7 @@ renderBtn.addEventListener("click", () => {
 // --- Students: you’ll edit / extend these functions ---
 function buildConfig(type, { year, publisher, metric }) {
   if (type === "bar") return barBySales(year, metric);
-  if (type === "line") return lineOveryears(publisher, ["trips", "revenueUSD"]);
+  if (type === "line") return lineOveryears(publisher, ["unitsM", "revenueUSD"]);
   if (type === "scatter") return scatterScoreVsShare(publisher);
   if (type === "doughnut") return doughnutReigonShare(year, publisher);
   if (type === "radar") return radarComparepublishers(year);
@@ -102,37 +102,38 @@ function lineOveryears(publisher, metrics) {
       },
       scales: {
         y: { title: { display: true, text: "Value" } },
-        x: { title: { display: true, text: "year" } }
+        x: { title: { display: true, text: "Year" } }
       }
     }
   };
 }
 
-// SCATTER — relationship between temperature and trips
+// SCATTER — relationship between priceUSD and unitsM
 function scatterScoreVsShare(publisher) {
   const rows = chartData.filter(r => r.publisher === publisher);
 
-  const points = rows.map(r => ({ x: r.tempC, y: r.trips }));
-
+  const points = rows.map(r => ({ x: r.unitsM * 100 , y: r.priceUSD }));
+  console.log(publisher, rows, points);
   return {
     type: "scatter",
     data: {
       datasets: [{
-        label: `Trips vs Temp (${publisher})`,
+        label: `unitsM vs priceUSD (${publisher})`,
         data: points
       }]
     },
     options: {
       plugins: {
-        title: { display: true, text: `Does temperature affect trips? (${publisher})` }
+        title: { display: true, text: `Does priceUSD affect unitsM? (${publisher})` }
       },
       scales: {
-        x: { title: { display: true, text: "Temperature (C)" } },
-        y: { title: { display: true, text: "Trips" } }
+        x: { title: { display: true, text: "Thousand Units" } },
+        y: { title: { display: true, text: "PriceUSD" } }
       }
     }
   };
 }
+
 
 // DOUGHNUT — member vs casual share for one publisher + year
 function doughnutReigonShare(year, publisher) {
@@ -140,7 +141,7 @@ function doughnutReigonShare(year, publisher) {
 
   const member = Math.round(row.memberShare * 100);
   const casual = 100 - member;
-
+  console.log(year, publisher);
   return {
     type: "doughnut",
     data: {
@@ -159,7 +160,7 @@ function doughnutReigonShare(year, publisher) {
 function radarComparepublishers(year) {
   const rows = chartData.filter(r => r.year === year);
 
-  const metrics = ["trips", "revenueUSD", "avgDurationMin", "incidents"];
+  const metrics = ["unitsM", "revenueUSD", "priceUSD", "reviewScore"];
   const labels = metrics;
 
   const datasets = rows.map(r => ({
