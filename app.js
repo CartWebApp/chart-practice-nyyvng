@@ -9,6 +9,9 @@ const chartTypeSelect = document.getElementById("chartType");
 const renderBtn = document.getElementById("renderBtn");
 const dataPreview = document.getElementById("dataPreview");
 const canvas = document.getElementById("chartCanvas");
+const titleSelect = document.getElementById("titleSelect");
+const genreSelect = document.getElementById("genreSelect");
+
 
 let currentChart = null;
 
@@ -22,21 +25,30 @@ publishers.forEach(h => publisherSelect.add(new Option(h, h)));
 yearSelect.value = years[0];
 publisherSelect.value = publishers[0];
 
+const title = [...new Set(chartData.map(r=> r.title))];
+title.forEach(t => titleSelect.add(new Option(t, t)));
+titleSelect.value = title[0];
+
+const genre = [...new Set(chartData.map(r=> r.genre))];
+genre.forEach(g => genreSelect.add(new Option(g, g)));
+genreSelect.value = genre[0];
+
 // Preview first 6 rows
 dataPreview.textContent = JSON.stringify(chartData.slice(0, 6), null, 2);
 
 // --- Main render ---
 renderBtn.addEventListener("click", () => {
   const chartType = chartTypeSelect.value;
-  const year = Number(yearSelect.value);
+  const year = yearSelect.value;
   const publisher = publisherSelect.value;
   const metric = metricSelect.value;
+  const genre = genreSelect.value;
 
   // Destroy old chart if it exists (common Chart.js gotcha)
   if (currentChart) currentChart.destroy();
 
   // Build chart config based on type
-  const config = buildConfig(chartType, { year, publisher, metric });
+  const config = buildConfig(chartType, { year, publisher, metric, title });
 
   currentChart = new Chart(canvas, config);
 });
@@ -137,16 +149,24 @@ function scatterScoreVsShare(publisher) {
 
 // DOUGHNUT — member vs casual share for one publisher + year
 function doughnutReigonShare(year, publisher) {
-  const row = chartData.find(r => r.year === year && r.publisher === publisher);
+  const row = chartData.find(r => r.year == year && r.publisher === publisher);
 
   const member = Math.round(row.memberShare * 100);
   const casual = 100 - member;
-  console.log(year, publisher);
+  if (!row) {
+    console.log("no data found", year, publisher);
+    return;
+  }
+  console.log(row);
+  const revenue = row.revenueUSD;
+  const units = row.unitsM;
+
+
   return {
     type: "doughnut",
     data: {
       labels: ["Members (%)", "Casual (%)"],
-      datasets: [{ label: "Rider mix", data: [member, casual] }]
+      datasets: [{ label: "Rider mix", data: [revenue, units] }]
     },
     options: {
       plugins: {
@@ -158,10 +178,11 @@ function doughnutReigonShare(year, publisher) {
 
 // RADAR — compare publishers across multiple metrics for one year
 function radarComparepublishers(year) {
-  const rows = chartData.filter(r => r.year === year);
+  const rows = chartData.filter(r => r.year == year);
 
   const metrics = ["unitsM", "revenueUSD", "priceUSD", "reviewScore"];
   const labels = metrics;
+  console.log("Radar rows:", rows);
 
   const datasets = rows.map(r => ({
     label: r.publisher,
